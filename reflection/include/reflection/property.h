@@ -25,8 +25,10 @@
  */
 
 #pragma once
-#ifndef __REFLECTION_PROPERTY_H__
-#define __REFLECTION_PROPERTY_H__
+#ifndef __REFLECTION_PROPERTYIMPL_H__
+#define __REFLECTION_PROPERTYIMPL_H__
+
+#include "reflection/abstract/abstractProperty.h"
 
 #include "reflection/accessibility.h"
 
@@ -34,21 +36,17 @@
 #include <stdint.h>
 #include <string>
 
+template< class tClass, typename tProperty>
 class Property
+    : public AbstractProperty
 {
-    template<class tClass>
+    template<class tTypeClass>
     friend class TypeDescription;
 
-    template<class tClass>
+    template<class tPropertyClass>
     friend class Properties;
 
 public:
-
-    enum Type
-    {
-        Const       = 0x01,
-        Volatile    = 0x02
-    };
 
     Property()
         : mType( typeid( void ) ),
@@ -68,12 +66,7 @@ public:
 
     }
 
-    Property *operator->()
-    {
-        return this;
-    }
-
-    std::string GetName() const
+    virtual std::string GetName() const override
     {
         if ( mName == nullptr )
         {
@@ -83,47 +76,58 @@ public:
         return mName;
     }
 
-    const char *GetCName() const
+    virtual const char *GetCName() const override
     {
         return mName;
     }
 
-    std::string GetDescription() const
+    virtual std::string GetDescription() const override
     {
-        if ( mDescription == nullptr )
-        {
-            return "";
-        }
-
-        return mDescription;
+        return mDescription != nullptr ? mDescription : "";
     }
 
-    const char *GetCDescription() const
+    virtual const char *GetCDescription() const override
     {
         return mDescription;
     }
 
-    uint32_t GetIndex() const
+    virtual size_t GetIndex() const override
     {
         return mIndex;
     }
 
-    std::type_index GetType() const
+    virtual std::type_index GetType() const override
     {
         return mType;
     }
 
-    std::type_index GetPtrType() const
+    virtual std::type_index GetMemberPtrType() const override
     {
-        return mType;
+        return mPtrType;
+    }
+
+    virtual Accessibility GetAccessibility() const override
+    {
+        return mAccessibility;
+    }
+
+    tProperty &Get( tClass &object ) const
+    {
+        return object.*mMemberPtr;
+    }
+
+    void Set( tClass &object, const tProperty &property )
+    {
+        object.*mMemberPtr = property;
     }
 
 protected:
 
-    Property( std::type_index type, std::type_index ptrType, Accessibility accessibility, const char *name,
-              const char *description, uint32_t customFlags, uint32_t index )
-        : mType( type ),
-          mPtrType( ptrType ),
+    Property( tProperty tClass::*variable, Accessibility accessibility, const char *name,
+              const char *description, uint32_t customFlags, size_t index )
+        : mMemberPtr( variable ),
+          mType( typeid( tProperty ) ),
+          mPtrType( typeid( variable ) ),
           mName( name ),
           mDescription( description ),
           mIndex( index ),
@@ -132,13 +136,16 @@ protected:
     {
     }
 
+
+
 private:
 
+    tProperty tClass::*mMemberPtr;
     std::type_index mType;
     std::type_index mPtrType;
     const char *mName;
     const char *mDescription;
-    uint32_t mIndex;
+    size_t mIndex;
     uint32_t mCustomFlags;
     Accessibility mAccessibility;
 };

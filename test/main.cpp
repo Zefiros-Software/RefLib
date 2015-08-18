@@ -32,67 +32,6 @@
 #include <cstdio>
 #include <stdint.h>
 
-class Test
-{
-public:
-
-    Test()
-    {
-
-    }
-
-    static void Reflect( Mirror &mirror )
-    {
-        mirror.Reflect( &Test::mMember1, 1, "Member1", "The first member of this class" );
-        mirror.Reflect( &Test::mMember2, 2, "Member2", "The second member of this class" );
-    }
-
-    int32_t mMember1;
-    int32_t mMember2;
-};
-
-class Test2
-{
-public:
-
-    Test2()
-    {
-    }
-
-    int32_t mMember1;
-    int32_t mMember2;
-};
-
-// namespace Reflect
-// {
-//     template<>
-//     void Reflect<Test2>( Mirror &mirror )
-//     {
-//         mirror.Reflect( &Test::mMember1, "Member1", "The first member of this class" );
-//         mirror.Reflect( &Test::mMember2, "Member2", "The second member of this class" );
-//     }
-// }
-//
-struct A { int a; };
-struct B : public virtual A   { int b; };
-struct C : public virtual A   { int c; };
-struct D : public B, public C { int d; };
-//
-// namespace Reflect
-// {
-//     template<>
-//     void Reflect<A>( Mirror &mirror )
-//     {
-//         mirror.Reflect( &A::a, "Member1", "The first member of this class" );
-//     }
-//     template<>
-//     void Reflect<B>( Mirror &mirror )
-//     {
-//         mirror.Reflect( &B::a, "Member1", "The first member of this class" );
-//         mirror.Reflect( &B::b, "Member2", "The second member of this class" );
-//     }
-// }
-
 int main( int argc, char **argv )
 {
 
@@ -100,45 +39,8 @@ int main( int argc, char **argv )
     _CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
     _CrtSetReportMode( _CRT_ASSERT, _CRTDBG_MODE_FILE );
     _CrtSetReportFile( _CRT_ASSERT, _CRTDBG_FILE_STDERR );
-    //_crtBreakAlloc =  ;
+    //_crtBreakAlloc =  0;
 #endif
-    {
-
-        std::string name = Reflect::GetType<Test>()->GetProperties()->Get( &Test::mMember2 )->GetName();
-        std::string description = Reflect::GetType<Test>()->GetProperties()->Get( &Test::mMember2 )->GetDescription();
-
-        //std::string name3 = Reflect::GetName<Test, int32_t>( test, test.mMember2 );
-    }
-    //     {
-    //
-    //         std::string name = Reflect::GetName( &Test2::mMember2 );
-    //
-    //         Test2 test;
-    //
-    //         std::string name2 = Reflect::GetName( test, &Test2::mMember2 );
-    //
-    //         //std::string name3 = Reflect::GetName( test, test.mMember2 );
-    //     }
-    //     {
-    //
-    //         std::string name = Reflect::GetName( &A::a );
-    //
-    //         A test;
-    //
-    //         std::string name2 = Reflect::GetName( test, &A::a );
-    //
-    //         std::string name3 = Reflect::GetName( test, test.a );
-    //     }
-    //     {
-    //
-    //         std::string name = Reflect::GetName( &B::a );
-    //
-    //         B test;
-    //
-    //         std::string name2 = Reflect::GetName( test, &B::a );
-    //
-    //         std::string name3 = Reflect::GetName( test, test.a );
-    //     }
 
     testing::InitGoogleTest( &argc, argv );
 

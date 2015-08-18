@@ -36,7 +36,7 @@ class Mirror
 
 public:
 
-    Mirror( ITypeDescription *typeDescription )
+    explicit Mirror( ITypeDescription *typeDescription )
         : mTypeDescription( typeDescription )
     {
 
@@ -44,25 +44,31 @@ public:
 
     template< class tClass, class tProperty >
     void Reflect( tProperty tClass::*variable,
-                  uint32_t index,
+                  size_t index,
                   const char *name = nullptr,
                   const char *description = nullptr )
     {
-        GetTypeDescription< tClass >().GetProperties().Add( variable, Accessibility::Public, index, 0x00, name, description );
+        GetTypeDescription< tClass >().GetProperties()->Add( variable, Accessibility::Public, index, 0x00, name, description );
+
+        // Reflect the property type as well
+        Reflect::GetType< tProperty >();
     }
 
     template< class tClass, class tProperty >
     void Reflect( tProperty tClass::*variable,
-                  uint32_t index,
+                  size_t index,
                   Accessibility accessibility,
                   const char *name = nullptr,
                   const char *description = nullptr )
     {
-        GetTypeDescription< tClass >().GetProperties().Add( variable, accessibility, index, 0x00, name, description );
+        GetTypeDescription< tClass >().GetProperties()->Add( variable, accessibility, index, 0x00, name, description );
+
+        // Reflect the property type as well
+        Reflect::GetType< tProperty >();
     }
 
     template< class tClass, class tProperty >
-    void Reflect( tProperty tClass::*variable,
+    void Reflect( size_t tClass::*variable,
                   uint32_t index,
                   Accessibility accessibility,
                   uint32_t customFlags = 0x00,
@@ -70,17 +76,23 @@ public:
                   const char *description = nullptr )
     {
         GetTypeDescription< tClass >().GetProperties().Add( variable, accessibility, index, customFlags, name, description );
+
+        // Reflect the property type as well
+        Reflect::GetType< tProperty >();
     }
 
     template< class tClass, class tProperty >
     void Reflect( tProperty tClass::*variable,
-                  uint32_t index,
+                  size_t index,
                   uint32_t customFlags,
                   Accessibility accessibility = Accessibility::Public,
                   const char *name = nullptr,
                   const char *description = nullptr )
     {
         GetTypeDescription< tClass >().GetProperties().Add( variable, accessibility, index, customFlags, name, description );
+
+        // Reflect the property type as well
+        Reflect::GetType< tProperty >();
     }
 
     template< class tClass, class tProperty >
@@ -90,7 +102,11 @@ public:
                   const char *name = nullptr,
                   const char *description = nullptr )
     {
-        GetTypeDescription< tClass >().GetProperties().Add( variable, accessibility, index, customFlags, name, description );
+        GetTypeDescription< tClass >().GetProperties().Add( variable, Accessibility::Public, index, customFlags, name,
+                                                            description );
+
+        // Reflect the property type as well
+        Reflect::GetType< tProperty >();
     }
 
 
@@ -100,9 +116,9 @@ public:
 
 
     template< class tClass, class tBase >
-    void Reflect( uint32_t index )
+    void Reflect( uint32_t baseClassIndex )
     {
-        GetTypeDescription< tClass >().GetProperties().Add( variable, index, name, description );
+        GetTypeDescription< tClass >().AddBaseClass< tBase >( baseClassIndex );
     }
 
 private:

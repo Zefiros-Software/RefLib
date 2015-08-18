@@ -41,13 +41,13 @@ public:
 
     ReflectionClassTest()
     {
-        assert(!Reflect::IsRegistered<tClass>());
+        assert( !Reflect::IsRegistered<tClass>() );
         Reflect::GetType<tClass>();
     }
 
     ~ReflectionClassTest()
     {
-        Reflect::Clear<tClass>();
+        Reflect::ClearAll();
     }
 };
 

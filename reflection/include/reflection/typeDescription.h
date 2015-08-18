@@ -34,6 +34,7 @@
 #include "reflection/defines.h"
 #include "reflection/util.h"
 
+#include <typeindex>
 #include <stdint.h>
 #include <assert.h>
 #include <vector>
@@ -41,43 +42,89 @@
 #include <map>
 #include <set>
 
-template< class tClass >
+template<class tClass>
 class TypeDescription;
 
-template< class tClass >
+template<class tClass>
 class Properties
 {
     friend class Mirror;
 
 public:
 
-    Properties( TypeDescription< tClass > *type )
+    enum class AccessibilityType : uint8_t
+    {
+        UpTo       = 0x00,
+        DownTo     = 0x01,
+        Exclusive  = 0x02,
+        NotEqual   = 0x03
+    };
+
+    explicit Properties( TypeDescription<tClass> *type )
         : mType( type )
     {
 
     }
 
-    template< typename tProperty >
-    Property Get( tProperty tClass::*variable ) const
+    ~Properties()
+    {
+        for ( auto &property : mProperties )
+        {
+            delete property.second;
+        }
+    }
+
+    template<typename tProperty >
+    Property< tClass, tProperty> *GetByMemberPtr( tProperty tClass::*variable ) const
     {
         return mProperties.at( MemberPtrToArray( variable ) );
     }
 
-    template< typename tProperty >
-    tProperty Get( tClass &obj, const char *name ) const
+    template<typename tProperty>
+    Property< tClass, tProperty> *Get( size_t index ) const
     {
-        return mPropertyNames[name];
+        Property<tClass, tProperty> *property = static_cast<Property<tClass, tProperty> *>( mPropertyIndices.at( index ) );
+        assert( property->GetType() == std::type_index( typeid( tProperty ) ) );
+        return property;
     }
 
-    template< typename tProperty >
-    tProperty Get( tClass &obj, uint32_t index ) const
+    template<typename tProperty>
+    std::vector<Property<tClass, tProperty> *> GetAll() const
     {
-        return mPropertyIndices[index];
+        std::vector<Property<tClass, tProperty> *> properties = GetBaseClassProperties< tProperty >();
+
+        for ( const auto &property : mProperties )
+        {
+            if ( property.second->GetType() == std::type_index( typeid( tProperty ) ) )
+            {
+                properties.push_back( static_cast<Property<tClass, tProperty> *>( property.second ) );
+            }
+        }
+
+        return properties;
     }
 
-    std::vector< Property > GetAll() const
+    template<typename tProperty>
+    std::vector<Property<tClass, tProperty> *> GetAll( Accessibility accessibility,
+                                                       AccessibilityType type = AccessibilityType::DownTo ) const
     {
-        std::vector< Property > properties = GetParentProperties();
+        std::vector<Property<tClass, tProperty> *> properties = GetBaseClassProperties< tProperty >();
+
+        for ( const auto &property : mProperties )
+        {
+            if ( property.second->GetType() == std::type_index( typeid( tProperty ) ) &&
+                    IsCorrectAccessibilityType( property.second, accessibility, type ) )
+            {
+                properties.push_back( static_cast<Property<tClass, tProperty> *>( property.second ) );
+            }
+        }
+
+        return properties;
+    }
+
+    std::vector<AbstractProperty *> GetAll() const
+    {
+        std::vector<AbstractProperty *> properties = GetBaseClassProperties();
 
         for ( const auto &property : mProperties )
         {
@@ -87,9 +134,25 @@ public:
         return properties;
     }
 
-    std::set< std::string > GetNames() const
+    std::vector<AbstractProperty *> GetAll( Accessibility accessibility,
+                                            AccessibilityType type = AccessibilityType::DownTo ) const
     {
-        std::set< std::string > names = GetParentNames();
+        std::vector<AbstractProperty *> properties = GetBaseClassProperties();
+
+        for ( const auto &property : mProperties )
+        {
+            if ( IsCorrectAccessibilityType( property.second, accessibility, type ) )
+            {
+                properties.push_back( property.second );
+            }
+        }
+
+        return properties;
+    }
+
+    std::set<std::string> GetNames() const
+    {
+        std::set<std::string> names = GetBaseClassNames();
 
         for ( const auto &name : mPropertyNames )
         {
@@ -99,9 +162,9 @@ public:
         return names;
     }
 
-    std::set< uint32_t > GetIndices() const
+    std::set<uint32_t> GetIndices() const
     {
-        std::set< uint32_t > indices;
+        std::set<uint32_t> indices;
 
         for ( const auto &index : mPropertyIndices )
         {
@@ -111,21 +174,22 @@ public:
         return indices;
     }
 
-    const Properties< tClass > *const operator->() const
+    const Properties<tClass> *operator->() const
     {
         return this;
     }
 
 protected:
 
-    template< typename tProperty >
-    Property Add( tProperty tClass::*variable, Accessibility accessibility, uint32_t index, uint32_t customFlags,
-                  const char *name, const char *description )
+    template<typename tProperty>
+    Property< tClass, tProperty > *Add( tProperty tClass::*variable, Accessibility accessibility, size_t index,
+                                        uint32_t customFlags, const char *name, const char *description )
     {
         static_assert( sizeof( variable ) <= REFLECTION_MAX_MEMBER_PTR_SIZE,
                        "It seems the member pointer is greater than we did expect, please adjust the maximum member ptr size." );
 
-        Property property( typeid( tProperty ), typeid( variable ), accessibility, name, description, customFlags, index );
+        Property<tClass, tProperty> *property = new Property<tClass, tProperty>( variable, accessibility, name,
+                                                                                 description, customFlags, index );
 
         mProperties.insert( std::make_pair( MemberPtrToArray( variable ), property ) );
 
@@ -139,13 +203,13 @@ protected:
         return property;
     }
 
-    std::vector< Property > GetProperties() const
+    std::vector<AbstractProperty *> GetProperties() const
     {
-        std::vector< Property > properties = GetParentProperties();
+        std::vector<AbstractProperty *> properties = GetBaseClassProperties();
 
         for ( const auto &property : mProperties )
         {
-            properties.push_back( property->second );
+            properties.push_back( property.second );
         }
 
         return properties;
@@ -153,24 +217,24 @@ protected:
 
 private:
 
-    template< typename tProperty >
+    template<typename tProperty>
     union MemberPtr
     {
         uint8_t data[REFLECTION_MAX_MEMBER_PTR_SIZE];
         tProperty tClass::*memberPtr;
     };
 
-    std::map< std::array<uint8_t, REFLECTION_MAX_MEMBER_PTR_SIZE>, Property > mProperties;
-    std::map< std::string, Property > mPropertyNames;
-    std::map< uint32_t, Property > mPropertyIndices;
+    std::map<std::array<uint8_t, REFLECTION_MAX_MEMBER_PTR_SIZE>, AbstractProperty *> mProperties;
+    std::map<std::string, AbstractProperty *> mPropertyNames;
+    std::map<uint32_t, AbstractProperty *> mPropertyIndices;
 
-    TypeDescription< tClass > *mType;
+    TypeDescription<tClass> *mType;
 
-    std::set< std::string > GetParentNames() const
+    std::set<std::string> GetBaseClassNames() const
     {
-        std::set< std::string > names;
+        std::set<std::string> names;
 
-        for ( const TypeDescription<tClass> &parent : mType->GetParents() )
+        for ( const TypeDescription<tClass> &parent : mType->GetBaseClasses() )
         {
             std::set<std::string> parentNames = parent->GetProperties()->GetNames();
             names.insert( parentNames.begin(), parentNames.end() );
@@ -179,22 +243,37 @@ private:
         return names;
     }
 
-    std::vector< Property > GetParentProperties() const
+    std::vector<AbstractProperty *> GetBaseClassProperties() const
     {
-        std::vector< Property > properties;
+        std::vector<AbstractProperty *> properties;
 
-        for ( const TypeDescription<tClass> &parent : mType->GetParents() )
+        for ( const TypeDescription<tClass> &parent : mType->GetBaseClasses() )
         {
-            std::vector<Property> parentProperties = parent->GetProperties()->GetAll();
+            std::vector<AbstractProperty *> parentProperties = parent->GetProperties()->GetAll();
             properties.insert( properties.end(), parentProperties.begin(), parentProperties.end() );
         }
 
         return properties;
     }
-    template< typename tProperty >
+
+    template<typename tProperty>
+    std::vector<Property<tClass, tProperty> * > GetBaseClassProperties() const
+    {
+        std::vector<Property<tClass, tProperty> *> properties;
+
+        for ( const TypeDescription<tClass> &parent : mType->GetBaseClasses() )
+        {
+            std::vector<Property<tClass, tProperty> *> parentProperties = parent->GetProperties()->GetAll<tProperty>();
+            properties.insert( properties.end(), parentProperties.begin(), parentProperties.end() );
+        }
+
+        return properties;
+    }
+
+    template<typename tProperty>
     static inline std::array<uint8_t, REFLECTION_MAX_MEMBER_PTR_SIZE> MemberPtrToArray( tProperty tClass::* variable )
     {
-        MemberPtr< tProperty> ptr = {};
+        MemberPtr<tProperty> ptr = {};
         ptr.memberPtr = variable;
 
         std::array<uint8_t, REFLECTION_MAX_MEMBER_PTR_SIZE> array;
@@ -203,13 +282,57 @@ private:
         return array;
     }
 
+    static bool IsCorrectAccessibilityType( AbstractProperty *property, Accessibility accessibility,
+                                            AccessibilityType type )
+    {
+        switch ( type )
+        {
+        case AccessibilityType::UpTo:
+
+            if ( property->GetAccessibility() >= accessibility )
+            {
+                return true;
+            }
+
+            break;
+
+        case AccessibilityType::DownTo:
+            if ( property->GetAccessibility() <= accessibility )
+            {
+                return true;
+            }
+
+            break;
+
+        case AccessibilityType::Exclusive:
+            if ( property->GetAccessibility() == accessibility )
+            {
+                return true;
+            }
+
+            break;
+
+        case AccessibilityType::NotEqual:
+
+            if ( property->GetAccessibility() != accessibility )
+            {
+                return true;
+            }
+
+            break;
+
+        }
+
+        return false;
+    }
+
 };
 
-template< class tClass >
+template<class tClass>
 class TypeDescription
     : public ITypeDescription
 {
-    template< class tClass >
+    template<class tTypeClass>
     friend class Properties;
     friend class Mirror;
 
@@ -220,18 +343,18 @@ public:
         NoParent = -1
     };
 
-    TypeDescription( int32_t parentIndex )
-        : mProperties( this ),
-          mParentIndex( parentIndex ),
-          mIsParent( true )
+    TypeDescription()
+        : mProperties( nullptr ),
+          mBaseClassIndex( NoParent ),
+          mIsBaseClass( false )
     {
+        SetFlags< tClass >();
+        Helper< tClass, std::is_class< tClass >::value >::SetProperties( this );
     }
 
-    TypeDescription()
-        : mProperties( this ),
-          mParentIndex( NoParent ),
-          mIsParent( false )
+    ~TypeDescription()
     {
+        Helper< tClass, std::is_class< tClass >::value >::DeleteProperties( this );
     }
 
     const TypeDescription *operator->() const
@@ -239,42 +362,129 @@ public:
         return this;
     }
 
-    virtual bool IsParent() const override
+    virtual bool IsBaseClass() const override
     {
-        return mIsParent;
+        return mIsBaseClass;
     }
 
-    virtual int32_t GetParentIndex() const override
+    virtual int32_t GetBaseClassIndex() const override
     {
-        assert( mIsParent );
-        return mParentIndex;
+        assert( mIsBaseClass );
+        return mBaseClassIndex;
     }
 
-    const Properties< tClass > &GetProperties() const
+    bool HasProperties() const
     {
         return mProperties;
     }
 
-    std::vector< TypeDescription< tClass > > GetParents() const
+    const Properties<tClass> *GetProperties() const
     {
-        return mParents;
+        return mProperties;
+    }
+
+    std::vector<TypeDescription<tClass>> GetBaseClasses() const
+    {
+        return mBaseClasses;
     }
 
 protected:
 
-    Properties< tClass > &GetProperties()
+    explicit TypeDescription( int32_t baseClassIndex )
+        : mProperties( nullptr ),
+          mBaseClassIndex( baseClassIndex ),
+          mIsBaseClass( true )
+    {
+    }
+
+    template< typename tBaseClass >
+    TypeDescription Create( int32_t baseClassIndex )
+    {
+        TypeDescription description( baseClassIndex );
+        description.SetFlags< tBaseClass >();
+        Helper< tBaseClass, std::is_class< tBaseClass >::value >::SetProperties( &description );
+
+        return description;
+    }
+
+    template< typename tBaseClass >
+    void AddBaseClass( int32_t baseClassIndex )
+    {
+        mBaseClasses.emplace_back( Create< tBaseClass >( baseClassIndex ) );
+    }
+
+    Properties<tClass> *GetProperties()
     {
         return mProperties;
     }
 
 private:
 
-    Properties< tClass > mProperties;
+    template< class tHelperClass, bool tIsClass >
+    struct Helper
+    {
+        static inline void SetProperties( TypeDescription< tHelperClass > * )
+        {
+        }
 
-    std::vector< TypeDescription< tClass > > mParents;
+        static inline void DeleteProperties( TypeDescription< tHelperClass > * )
+        {
 
-    int32_t mParentIndex;
-    bool mIsParent;
+        }
+    };
+
+    template< class tHelperClass >
+    struct Helper< tHelperClass, true >
+    {
+        static inline void SetProperties( TypeDescription< tHelperClass > *description )
+        {
+            description->mProperties = new Properties<tHelperClass>( description );
+        }
+
+        static inline void DeleteProperties( TypeDescription< tHelperClass > *description )
+        {
+            delete description->mProperties;
+        }
+    };
+
+    Properties<tClass> *mProperties;
+
+    std::vector<TypeDescription<tClass>> mBaseClasses;
+
+    int32_t mBaseClassIndex;
+    uint32_t mFlags;
+    bool mIsBaseClass;
+
+    template< typename tFlagClass >
+    void SetFlags()
+    {
+        mFlags = std::is_array< tFlagClass >::value ? Type::IsArray : 0x00 |
+                 std::is_class< tFlagClass >::value ? Type::IsClass : 0x00 |
+                 std::is_enum< tFlagClass >::value ? Type::IsEnum : 0x00 |
+                 std::is_floating_point< tFlagClass >::value ? Type::IsFloatingPoint : 0x00 |
+                 std::is_integral< tFlagClass >::value ? Type::IsIntegral : 0x00 |
+                 std::is_member_function_pointer< tFlagClass >::value ? Type::IsMemberFunctionPointer : 0x00 |
+                 std::is_member_object_pointer< tFlagClass >::value ? Type::IsMemberObjectPointer : 0x00 |
+                 std::is_pointer< tFlagClass >::value ? Type::IsPointer : 0x00 |
+                 std::is_union< tFlagClass >::value ? Type::IsUnion : 0x00 |
+                 std::is_arithmetic< tFlagClass >::value ? Type::IsArithmetic : 0x00 |
+                 std::is_compound< tFlagClass >::value ? Type::IsCompound : 0x00 |
+                 std::is_fundamental< tFlagClass >::value ? Type::IsFundamental : 0x00 |
+                 std::is_member_pointer< tFlagClass >::value ? Type::IsMemberPointer : 0x00 |
+                 std::is_object< tFlagClass >::value ? Type::IsClass : 0x00 |
+                 std::is_reference< tFlagClass >::value ? Type::IsReference : 0x00 |
+                 std::is_scalar< tFlagClass >::value ? Type::IsScalar : 0x00 |
+                 std::is_const< tFlagClass >::value ? Type::IsConst : 0x00 |
+                 std::is_empty< tFlagClass >::value ? Type::IsEmpty : 0x00 |
+                 std::is_literal_type< tFlagClass >::value ? Type::IsLiteral : 0x00 |
+                 std::is_pod< tFlagClass >::value ? Type::IsPOD : 0x00 |
+                 std::is_polymorphic< tFlagClass >::value ? Type::IsPolymorphic : 0x00 |
+                 std::is_signed< tFlagClass >::value ? Type::IsSigned : 0x00 |
+                 std::is_standard_layout< tFlagClass >::value ? Type::IsStandardLayout : 0x00 |
+                 std::is_trivial< tFlagClass>::value ? Type::IsTrivial : 0x00 |
+                 std::is_unsigned< tFlagClass>::value ? Type::IsUnsigned : 0x00 |
+                 std::is_volatile< tFlagClass >::value ? Type::IsVolatile : 0x00;
+    }
 };
 
 #endif

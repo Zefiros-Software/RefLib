@@ -34,13 +34,43 @@ class ITypeDescription
 {
 public:
 
+    enum Type
+    {
+        IsArray                 = ( 1 << 0 ),
+        IsClass                 = ( 1 << 1 ),
+        IsEnum                  = ( 1 << 2 ),
+        IsFloatingPoint         = ( 1 << 3 ),
+        IsIntegral              = ( 1 << 4 ),
+        IsMemberFunctionPointer = ( 1 << 5 ),
+        IsMemberObjectPointer   = ( 1 << 6 ),
+        IsPointer               = ( 1 << 7 ),
+        IsUnion                 = ( 1 << 8 ),
+        IsArithmetic            = ( 1 << 9 ),
+        IsCompound              = ( 1 << 10 ),
+        IsFundamental           = ( 1 << 11 ),
+        IsMemberPointer         = ( 1 << 12 ),
+        IsObject                = ( 1 << 13 ),
+        IsReference             = ( 1 << 14 ),
+        IsScalar                = ( 1 << 15 ),
+        IsConst                 = ( 1 << 16 ),
+        IsEmpty                 = ( 1 << 17 ),
+        IsLiteral               = ( 1 << 18 ),
+        IsPOD                   = ( 1 << 19 ),
+        IsPolymorphic           = ( 1 << 20 ),
+        IsSigned                = ( 1 << 21 ),
+        IsStandardLayout        = ( 1 << 22 ),
+        IsTrivial               = ( 1 << 23 ),
+        IsUnsigned              = ( 1 << 24 ),
+        IsVolatile              = ( 1 << 25 )
+    };
+
     virtual ~ITypeDescription()
     {
     }
 
-    virtual bool IsParent() const = 0;
+    virtual bool IsBaseClass() const = 0;
 
-    virtual int32_t GetParentIndex() const = 0;
+    virtual int32_t GetBaseClassIndex() const = 0;
 };
 
 #endif

@@ -39,13 +39,23 @@ namespace
         uint32_t publicU32Property;
         uint8_t publicU8Property;
 
+        SimplePropertiesBasicRegistration()
+            : publicU32Property( 0 ),
+              publicU8Property( 0 ),
+              mProtectedU32Property( 0 ),
+              mProtectedU8Property( 0 ),
+              mPrivateU32Property( 0 ),
+              mPrivateU8Property( 0 )
+        {
+        }
+
         static void Reflect( Mirror &mirror )
         {
             mirror.Reflect( &SimplePropertiesBasicRegistration::publicU32Property, 0 );
             mirror.Reflect( &SimplePropertiesBasicRegistration::publicU8Property, 1 );
 
             mirror.Reflect( &SimplePropertiesBasicRegistration::mProtectedU32Property, 2 );
-            mirror.Reflect( &SimplePropertiesBasicRegistration::mPropertyU8Property, 3 );
+            mirror.Reflect( &SimplePropertiesBasicRegistration::mProtectedU8Property, 3 );
 
             mirror.Reflect( &SimplePropertiesBasicRegistration::mPrivateU32Property, 4 );
             mirror.Reflect( &SimplePropertiesBasicRegistration::mPrivateU8Property, 5 );
@@ -54,7 +64,7 @@ namespace
     protected:
 
         uint32_t mProtectedU32Property;
-        uint8_t mPropertyU8Property;
+        uint8_t mProtectedU8Property;
 
     private:
 
@@ -99,7 +109,8 @@ namespace
     {
         ReflectionClassTest< SimplePropertiesBasicRegistration > test;
 
-        std::vector< Property > properties = Reflect::GetType<SimplePropertiesBasicRegistration>()->GetProperties()->GetAll();
+        std::vector< AbstractProperty * > properties =
+            Reflect::GetType<SimplePropertiesBasicRegistration>()->GetProperties()->GetAll();
 
         EXPECT_EQ( 6, properties.size() );
 
@@ -145,11 +156,123 @@ namespace
         EXPECT_EQ( std::type_index( typeid( uint32_t ) ), properties[4]->GetType() );
         EXPECT_EQ( std::type_index( typeid( uint8_t ) ), properties[5]->GetType() );
 
-        EXPECT_EQ( std::type_index( typeid( uint32_t SimplePropertiesBasicRegistration::* ) ), properties[0]->GetPtrType() );
-        EXPECT_EQ( std::type_index( typeid( uint8_t SimplePropertiesBasicRegistration::* ) ), properties[1]->GetPtrType() );
-        EXPECT_EQ( std::type_index( typeid( uint32_t SimplePropertiesBasicRegistration::* ) ), properties[2]->GetPtrType() );
-        EXPECT_EQ( std::type_index( typeid( uint8_t SimplePropertiesBasicRegistration::* ) ), properties[3]->GetPtrType() );
-        EXPECT_EQ( std::type_index( typeid( uint32_t SimplePropertiesBasicRegistration::* ) ), properties[4]->GetPtrType() );
-        EXPECT_EQ( std::type_index( typeid( uint8_t SimplePropertiesBasicRegistration::* ) ), properties[5]->GetPtrType() );
+        EXPECT_EQ( std::type_index( typeid( &SimplePropertiesBasicRegistration::publicU32Property ) ),
+                   properties[0]->GetMemberPtrType() );
+        EXPECT_EQ( std::type_index( typeid( uint8_t SimplePropertiesBasicRegistration::* ) ),
+                   properties[1]->GetMemberPtrType() );
+        EXPECT_EQ( std::type_index( typeid( uint32_t SimplePropertiesBasicRegistration::* ) ),
+                   properties[2]->GetMemberPtrType() );
+        EXPECT_EQ( std::type_index( typeid( uint8_t SimplePropertiesBasicRegistration::* ) ),
+                   properties[3]->GetMemberPtrType() );
+        EXPECT_EQ( std::type_index( typeid( uint32_t SimplePropertiesBasicRegistration::* ) ),
+                   properties[4]->GetMemberPtrType() );
+        EXPECT_EQ( std::type_index( typeid( uint8_t SimplePropertiesBasicRegistration::* ) ),
+                   properties[5]->GetMemberPtrType() );
+    }
+
+    TEST( P( SimplePropertiesBasicRegistration ), GetProperty )
+    {
+        ReflectionClassTest< SimplePropertiesBasicRegistration > test;
+
+        const Properties< SimplePropertiesBasicRegistration > *properties =
+            Reflect::GetType<SimplePropertiesBasicRegistration>()->GetProperties();
+
+        SimplePropertiesBasicRegistration variable;
+
+        EXPECT_EQ( 0, properties->Get<uint32_t>( 0 )->Get( variable ) );
+        EXPECT_EQ( 0, properties->Get<uint8_t>( 1 )->Get( variable ) );
+        EXPECT_EQ( 0, properties->Get<uint32_t>( 2 )->Get( variable ) );
+        EXPECT_EQ( 0, properties->Get<uint8_t>( 3 )->Get( variable ) );
+        EXPECT_EQ( 0, properties->Get<uint32_t>( 4 )->Get( variable ) );
+        EXPECT_EQ( 0, properties->Get<uint8_t>( 5 )->Get( variable ) );
+
+        properties->Get<uint32_t>( 0 )->Get( variable ) = 5;
+        properties->Get<uint8_t>( 1 )->Get( variable ) = 4;
+        properties->Get<uint32_t>( 2 )->Get( variable ) = 3;
+        properties->Get<uint8_t>( 3 )->Get( variable ) = 2;
+        properties->Get<uint32_t>( 4 )->Get( variable ) = 1;
+        properties->Get<uint8_t>( 5 )->Get( variable ) = 0;
+
+        EXPECT_EQ( 5, properties->Get<uint32_t>( 0 )->Get( variable ) );
+        EXPECT_EQ( 4, properties->Get<uint8_t>( 1 )->Get( variable ) );
+        EXPECT_EQ( 3, properties->Get<uint32_t>( 2 )->Get( variable ) );
+        EXPECT_EQ( 2, properties->Get<uint8_t>( 3 )->Get( variable ) );
+        EXPECT_EQ( 1, properties->Get<uint32_t>( 4 )->Get( variable ) );
+        EXPECT_EQ( 0, properties->Get<uint8_t>( 5 )->Get( variable ) );
+    }
+
+    TEST( P( SimplePropertiesBasicRegistration ), GetPropertiesByType )
+    {
+        ReflectionClassTest< SimplePropertiesBasicRegistration > test;
+
+        std::vector< Property<SimplePropertiesBasicRegistration, uint32_t> * > propertiesU32 =
+            Reflect::GetType<SimplePropertiesBasicRegistration>()->GetProperties()->GetAll<uint32_t>();
+        std::vector< Property<SimplePropertiesBasicRegistration, uint8_t> * > propertiesU8 =
+            Reflect::GetType<SimplePropertiesBasicRegistration>()->GetProperties()->GetAll<uint8_t>();
+
+        EXPECT_EQ( 3, propertiesU32.size() );
+        EXPECT_EQ( 3, propertiesU8.size() );
+
+        EXPECT_EQ( 0, propertiesU32[0]->GetIndex() );
+        EXPECT_EQ( 2, propertiesU32[1]->GetIndex() );
+        EXPECT_EQ( 4, propertiesU32[2]->GetIndex() );
+
+        EXPECT_EQ( 1, propertiesU8[0]->GetIndex() );
+        EXPECT_EQ( 3, propertiesU8[1]->GetIndex() );
+        EXPECT_EQ( 5, propertiesU8[2]->GetIndex() );
+
+        EXPECT_EQ( "", propertiesU32[0]->GetName() );
+        EXPECT_EQ( "", propertiesU32[1]->GetName() );
+        EXPECT_EQ( "", propertiesU32[2]->GetName() );
+
+        EXPECT_EQ( "", propertiesU8[0]->GetName() );
+        EXPECT_EQ( "", propertiesU8[1]->GetName() );
+        EXPECT_EQ( "", propertiesU8[2]->GetName() );
+
+        EXPECT_EQ( "", propertiesU32[0]->GetDescription() );
+        EXPECT_EQ( "", propertiesU32[1]->GetDescription() );
+        EXPECT_EQ( "", propertiesU32[2]->GetDescription() );
+
+        EXPECT_EQ( "", propertiesU8[0]->GetDescription() );
+        EXPECT_EQ( "", propertiesU8[1]->GetDescription() );
+        EXPECT_EQ( "", propertiesU8[2]->GetDescription() );
+
+        EXPECT_EQ( nullptr, propertiesU32[0]->GetCName() );
+        EXPECT_EQ( nullptr, propertiesU32[1]->GetCName() );
+        EXPECT_EQ( nullptr, propertiesU32[2]->GetCName() );
+
+        EXPECT_EQ( nullptr, propertiesU8[0]->GetCName() );
+        EXPECT_EQ( nullptr, propertiesU8[1]->GetCName() );
+        EXPECT_EQ( nullptr, propertiesU8[2]->GetCName() );
+
+        EXPECT_EQ( nullptr, propertiesU32[0]->GetCDescription() );
+        EXPECT_EQ( nullptr, propertiesU32[1]->GetCDescription() );
+        EXPECT_EQ( nullptr, propertiesU32[2]->GetCDescription() );
+
+        EXPECT_EQ( nullptr, propertiesU8[0]->GetCDescription() );
+        EXPECT_EQ( nullptr, propertiesU8[1]->GetCDescription() );
+        EXPECT_EQ( nullptr, propertiesU8[2]->GetCDescription() );
+
+        EXPECT_EQ( std::type_index( typeid( uint32_t ) ), propertiesU32[0]->GetType() );
+        EXPECT_EQ( std::type_index( typeid( uint32_t ) ), propertiesU32[1]->GetType() );
+        EXPECT_EQ( std::type_index( typeid( uint32_t ) ), propertiesU32[2]->GetType() );
+
+        EXPECT_EQ( std::type_index( typeid( uint8_t ) ), propertiesU8[0]->GetType() );
+        EXPECT_EQ( std::type_index( typeid( uint8_t ) ), propertiesU8[1]->GetType() );
+        EXPECT_EQ( std::type_index( typeid( uint8_t ) ), propertiesU8[2]->GetType() );
+
+        EXPECT_EQ( std::type_index( typeid( uint32_t SimplePropertiesBasicRegistration::* ) ),
+                   propertiesU32[0]->GetMemberPtrType() );
+        EXPECT_EQ( std::type_index( typeid( uint32_t SimplePropertiesBasicRegistration::* ) ),
+                   propertiesU32[1]->GetMemberPtrType() );
+        EXPECT_EQ( std::type_index( typeid( uint32_t SimplePropertiesBasicRegistration::* ) ),
+                   propertiesU32[2]->GetMemberPtrType() );
+
+        EXPECT_EQ( std::type_index( typeid( uint8_t SimplePropertiesBasicRegistration::* ) ),
+                   propertiesU8[0]->GetMemberPtrType() );
+        EXPECT_EQ( std::type_index( typeid( uint8_t SimplePropertiesBasicRegistration::* ) ),
+                   propertiesU8[1]->GetMemberPtrType() );
+        EXPECT_EQ( std::type_index( typeid( uint8_t SimplePropertiesBasicRegistration::* ) ),
+                   propertiesU8[2]->GetMemberPtrType() );
     }
 }

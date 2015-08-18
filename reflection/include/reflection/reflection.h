@@ -35,34 +35,49 @@
 #include <unordered_map>
 #include <typeindex>
 #include <typeinfo>
+#include <mutex>
+
+namespace ReflectionHelper
+{
+    template< class tClass >
+    static inline void Reflect( Mirror &mirror )
+    {
+        tClass::Reflect( mirror );
+    }
+}
 
 static class InternalReflection
 {
 public:
 
+    InternalReflection()
+        : mClassIDCounter( 0 )
+    {
+
+    }
+
     ~InternalReflection()
     {
-        for ( auto &types : mTypes )
-        {
-            delete types.second;
-        }
+        ClearTypes();
     }
 
     template< class tClass >
     TypeDescription< tClass > *ReflectType()
     {
-        std::type_index typeId = typeid( tClass );
+        const size_t typeId = GetClassID< tClass >();
 
         auto type = mTypes.find( typeId );
 
         if ( type == mTypes.end() )
         {
+
             TypeDescription< tClass > *typeDescription = new TypeDescription< tClass >();
             Mirror mirror( typeDescription );
 
-            ReflectionHelper::Reflect< tClass >( mirror );
-
+            // prevent infinite recursion by adding the pointer already
             mTypes[ typeId ] = typeDescription;
+
+            Helper< tClass, std::is_class< tClass >::value >::Reflect( mirror );
 
             return static_cast< TypeDescription< tClass > * >( typeDescription );
         }
@@ -75,7 +90,7 @@ public:
     template< class tClass >
     void ClearType()
     {
-        std::type_index typeId = typeid( tClass );
+        const size_t typeId = GetClassID< tClass >();
 
         auto type = mTypes.find( typeId );
 
@@ -89,27 +104,82 @@ public:
     template< class tClass >
     bool IsRegistered()
     {
-        std::type_index typeId = typeid( tClass );
+        const size_t typeId = GetClassID< tClass >();
 
         return mTypes.find( typeId ) != mTypes.end();
     }
 
+    void ClearTypes()
+    {
+        for ( auto &types : mTypes )
+        {
+            delete types.second;
+        }
+
+        mTypes.clear();
+    }
+
+    template< typename tT >
+    size_t GetClassID()
+    {
+        return AssignClassID< tT >( *this );
+    }
+
 private:
 
-    std::unordered_map< std::type_index, ITypeDescription * > mTypes;
+    std::unordered_map< size_t, ITypeDescription * > mTypes;
+    std::unordered_map< std::type_index, size_t > mClassIDCache;
+
+    std::mutex mClassIDLock;
+    size_t mClassIDCounter;
+
+    template< class tClass, bool tIsClass >
+    struct Helper
+    {
+        static inline void Reflect( Mirror & )
+        {
+        }
+    };
+
+    template< class tClass >
+    struct Helper< tClass, true >
+    {
+        static inline void Reflect( Mirror &mirror )
+        {
+            ReflectionHelper::Reflect< tClass >( mirror );
+        }
+    };
+
+    template< typename tT >
+    static size_t AssignClassID( InternalReflection &reflection )
+    {
+        static size_t mClassId = CacheClassID< tT >( reflection );
+
+        assert( mClassId > 0 && "A class ID of 0 is not allowed." );
+
+        return mClassId;
+    }
+
+    template< typename tT >
+    static size_t CacheClassID( InternalReflection &reflection )
+    {
+        const std::type_index typeIndex = std::type_index( typeid( tT ) );
+
+        std::lock_guard< std::mutex > lock( reflection.mClassIDLock );
+
+        auto it = reflection.mClassIDCache.find( typeIndex );
+
+        if ( it == reflection.mClassIDCache.end() )
+        {
+            reflection.mClassIDCache.insert( std::make_pair( typeIndex, ++reflection.mClassIDCounter ) );
+            return reflection.mClassIDCounter;
+        }
+
+        return it->second;
+    }
 
 } gInternalReflection;
 
-
-
-namespace ReflectionHelper
-{
-    template< class tClass >
-    static inline void Reflect( Mirror &mirror )
-    {
-        tClass::Reflect( mirror );
-    }
-}
 
 namespace Reflect
 {
@@ -129,6 +199,11 @@ namespace Reflect
     static inline void Clear()
     {
         gInternalReflection.ClearType< tClass >();
+    }
+
+    static inline void ClearAll()
+    {
+        gInternalReflection.ClearTypes();
     }
 }
 
