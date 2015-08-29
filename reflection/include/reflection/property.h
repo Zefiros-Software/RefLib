@@ -135,9 +135,7 @@ protected:
           mAccessibility( accessibility )
     {
     }
-
-
-
+	
 private:
 
     tProperty tClass::*mMemberPtr;

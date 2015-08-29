@@ -39,10 +39,43 @@
 
 namespace ReflectionHelper
 {
+    template <typename tT>
+    class HasReflect
+    {
+    private:
+
+        template <typename tClass> static uint8_t test( decltype( &tClass::Reflect ) );
+        template <typename tClass> static uint32_t test( ... );
+
+    public:
+        enum
+        {
+            value = sizeof( test<tT>( 0 ) ) == sizeof( uint8_t )
+        };
+	};
+
+
+	template< class tClass, bool tHasReflect >
+	struct Helper
+	{
+		static inline void Reflect(Mirror &)
+		{
+		}
+	};
+
+	template< class tClass >
+	struct Helper< tClass, true >
+	{
+		static inline void Reflect(Mirror &mirror)
+		{
+			tClass::Reflect(mirror);
+		}
+	};
+
     template< class tClass >
     static inline void Reflect( Mirror &mirror )
     {
-        tClass::Reflect( mirror );
+		Helper< tClass, HasReflect< tClass >::value >::Reflect(mirror);
     }
 }
 

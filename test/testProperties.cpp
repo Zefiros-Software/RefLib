@@ -201,6 +201,37 @@ namespace
         EXPECT_EQ( 0, properties->Get<uint8_t>( 5 )->Get( variable ) );
     }
 
+    TEST( P( SimplePropertiesBasicRegistration ), SetProperty )
+    {
+        ReflectionClassTest< SimplePropertiesBasicRegistration > test;
+
+        const Properties< SimplePropertiesBasicRegistration > *properties =
+            Reflect::GetType<SimplePropertiesBasicRegistration>()->GetProperties();
+
+        SimplePropertiesBasicRegistration variable;
+
+        EXPECT_EQ( 0, properties->Get<uint32_t>( 0 )->Get( variable ) );
+        EXPECT_EQ( 0, properties->Get<uint8_t>( 1 )->Get( variable ) );
+        EXPECT_EQ( 0, properties->Get<uint32_t>( 2 )->Get( variable ) );
+        EXPECT_EQ( 0, properties->Get<uint8_t>( 3 )->Get( variable ) );
+        EXPECT_EQ( 0, properties->Get<uint32_t>( 4 )->Get( variable ) );
+        EXPECT_EQ( 0, properties->Get<uint8_t>( 5 )->Get( variable ) );
+
+        properties->Get<uint32_t>( 0 )->Set( variable, 5 );
+        properties->Get<uint8_t>( 1 )->Set( variable, 4 );
+        properties->Get<uint32_t>( 2 )->Set( variable, 3 );
+        properties->Get<uint8_t>( 3 )->Set( variable, 2 );
+        properties->Get<uint32_t>( 4 )->Set( variable, 1 );
+        properties->Get<uint8_t>( 5 )->Set( variable, 0 );
+
+        EXPECT_EQ( 5, properties->Get<uint32_t>( 0 )->Get( variable ) );
+        EXPECT_EQ( 4, properties->Get<uint8_t>( 1 )->Get( variable ) );
+        EXPECT_EQ( 3, properties->Get<uint32_t>( 2 )->Get( variable ) );
+        EXPECT_EQ( 2, properties->Get<uint8_t>( 3 )->Get( variable ) );
+        EXPECT_EQ( 1, properties->Get<uint32_t>( 4 )->Get( variable ) );
+        EXPECT_EQ( 0, properties->Get<uint8_t>( 5 )->Get( variable ) );
+    }
+
     TEST( P( SimplePropertiesBasicRegistration ), GetPropertiesByType )
     {
         ReflectionClassTest< SimplePropertiesBasicRegistration > test;
@@ -275,4 +306,27 @@ namespace
         EXPECT_EQ( std::type_index( typeid( uint8_t SimplePropertiesBasicRegistration::* ) ),
                    propertiesU8[2]->GetMemberPtrType() );
     }
+
+    class NoProperties
+    {
+    public:
+
+        static void Reflect( Mirror & )
+        {
+        }
+    };
+
+    TEST( P( NoProperties ), SanityCheck )
+    {
+        ReflectionClassTest< NoProperties > test;
+
+        Reflect::GetType<NoProperties>();
+        auto properties = Reflect::GetType<NoProperties>()->GetProperties();
+
+        EXPECT_TRUE( properties->GetAll().empty() );
+        EXPECT_TRUE( properties->GetNames().empty() );
+        EXPECT_TRUE( properties->GetIndices().empty() );
+    }
+
+
 }
