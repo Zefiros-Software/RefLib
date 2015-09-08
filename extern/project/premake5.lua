@@ -61,6 +61,7 @@ solution "reflection"
 			
 		configuration "gmake"
 			links "pthread"
+			buildoptions "-std=c++11 -stdlib=libc++"
 			
 		configuration { "Debug", "x32" }
 			defines "PREFIX=X32D_"
