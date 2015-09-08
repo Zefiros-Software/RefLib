@@ -29,6 +29,7 @@
 #define __REFLECTION_MIRROR_H__
 
 #include "reflection/typeDescription.h"
+#include "reflection/reflection.h"
 
 class Mirror
 {
