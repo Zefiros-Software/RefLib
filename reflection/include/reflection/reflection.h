@@ -52,30 +52,30 @@ namespace ReflectionHelper
         {
             value = sizeof( test<tT>( 0 ) ) == sizeof( uint8_t )
         };
-	};
+    };
 
 
-	template< class tClass, bool tHasReflect >
-	struct Helper
-	{
-		static inline void Reflect(Mirror &)
-		{
-		}
-	};
+    template< class tClass, bool tHasReflect >
+    struct Helper
+    {
+        static inline void Reflect( Mirror & )
+        {
+        }
+    };
 
-	template< class tClass >
-	struct Helper< tClass, true >
-	{
-		static inline void Reflect(Mirror &mirror)
-		{
-			tClass::Reflect(mirror);
-		}
-	};
+    template< class tClass >
+    struct Helper< tClass, true >
+    {
+        static inline void Reflect( Mirror &mirror )
+        {
+            tClass::Reflect( mirror );
+        }
+    };
 
     template< class tClass >
     static inline void Reflect( Mirror &mirror )
     {
-		Helper< tClass, HasReflect< tClass >::value >::Reflect(mirror);
+        Helper< tClass, HasReflect< tClass >::value >::Reflect( mirror );
     }
 }
 
@@ -158,6 +158,18 @@ public:
         return AssignClassID< tT >( *this );
     }
 
+    static InternalReflection *GetInstance( InternalReflection *reflection = nullptr )
+    {
+        static InternalReflection *mReflection = new InternalReflection();
+
+        if ( reflection )
+        {
+            mReflection = reflection;
+        }
+
+        return mReflection;
+    }
+
 private:
 
     std::unordered_map< size_t, ITypeDescription * > mTypes;
@@ -212,32 +224,5 @@ private:
     }
 
 } gInternalReflection;
-
-
-namespace Reflect
-{
-    template< class tClass >
-    static inline const TypeDescription< tClass > *GetType()
-    {
-        return gInternalReflection.ReflectType< tClass >();
-    }
-
-    template< class tClass >
-    static inline bool IsRegistered()
-    {
-        return gInternalReflection.IsRegistered< tClass >();
-    }
-
-    template< class tClass >
-    static inline void Clear()
-    {
-        gInternalReflection.ClearType< tClass >();
-    }
-
-    static inline void ClearAll()
-    {
-        gInternalReflection.ClearTypes();
-    }
-}
 
 #endif
