@@ -1,7 +1,7 @@
 /**
  * @cond ___LICENSE___
  *
- * Copyright (c) 2015 Koen Visscher, Paul Visscher and individual contributors.
+ * Copyright (c) 2016 Koen Visscher, Paul Visscher and individual contributors.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,26 +33,23 @@
 namespace Reflect
 {
     template< class tClass >
-    static inline const TypeDescription< tClass > *GetType()
+    inline const TypeDescription< tClass > *GetType()
     {
         return InternalReflection::GetInstance()->ReflectType< tClass >();
     }
 
     template< class tClass >
-    static inline bool IsRegistered()
+    inline bool IsRegistered()
     {
         return InternalReflection::GetInstance()->IsRegistered< tClass >();
     }
 
     template< class tClass >
-    static inline void Clear()
+    inline void Clear()
     {
         InternalReflection::GetInstance()->ClearType< tClass >();
     }
 
-    static inline void ClearAll()
-    {
-        InternalReflection::GetInstance()->ClearTypes();
-    }
+    void ClearAll();
 }
 #endif

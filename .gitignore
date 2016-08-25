@@ -1,14 +1,39 @@
-reflection/Reflection.sdf
-reflection/Reflection.sln
-reflection/Reflection.v11.suo
-reflection/Reflection.vcxproj.filters
-reflection/Reflection.vcxproj.user
+-- artifacts
 bin/*
-build/
-*.opensdf
-*.vcxproj
-*.filters
-*.user
-test/lib/
+test/obj/*
+test/bin/*
+
+-- zpm
+.config.json
+docs/style/.assets.lua
+
+-- git
 *.orig
-documentation/out/
+
+-- make
+Makefile
+*.make
+
+-- visual studio code
+*/.vs/*
+
+-- visual studio
+*.sdf
+*.sln
+*.suo
+*.VC.*
+*.opensdf
+*.vcxproj*
+
+-- Intel Tools
+*Amplifier*
+
+-- Docs
+*.chi
+*.chm
+
+-- ZPM 
+extern/
+assets/
+test/extern
+test/assets

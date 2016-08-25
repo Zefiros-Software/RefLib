@@ -1,0 +1,11 @@
+{
+    "name": "Zefiros-Software/RefLib",
+    "dev": {
+        "requires": [
+            {
+                "name": "Zefiros-Software/GoogleTest",
+                "version": "@head"
+            }
+        ]
+    }
+}

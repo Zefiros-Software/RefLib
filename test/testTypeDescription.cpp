@@ -28,25 +28,23 @@
 
 #include "helper.h"
 
-#include "gtest/gtest.h"
-
 namespace
 {
 
-	class NoReflect
-	{
-	};
+    class NoReflect
+    {
+    };
 
-	TEST(P(NoReflect), SanityCheck)
-	{
-		ReflectionClassTest< NoReflect > test;
+    TEST( P( NoReflect ), SanityCheck )
+    {
+        ReflectionClassTest< NoReflect > test;
 
-		Reflect::GetType<NoReflect>();
-		auto properties = Reflect::GetType<NoReflect>()->GetProperties();
+        Reflect::GetType<NoReflect>();
+        auto properties = Reflect::GetType<NoReflect>()->GetProperties();
 
-		EXPECT_TRUE(properties->GetAll().empty());
-		EXPECT_TRUE(properties->GetNames().empty());
-		EXPECT_TRUE(properties->GetIndices().empty());
-	}
+        EXPECT_TRUE( properties->GetAll().empty() );
+        EXPECT_TRUE( properties->GetNames().empty() );
+        EXPECT_TRUE( properties->GetIndices().empty() );
+    }
 
 }

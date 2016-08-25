@@ -34,6 +34,8 @@
 #define CONCAT( a, b ) CONCATEXT( a, b )
 #define P( prefix ) CONCAT( PREFIX, prefix )
 
+#include "gtest/gtest.h"
+
 template< class tClass >
 class ReflectionClassTest
 {
