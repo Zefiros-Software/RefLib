@@ -45,20 +45,38 @@
 template<class tClass>
 class TypeDescription;
 
-template<class tClass>
-class Properties
+class AbstractProperties
 {
-    friend class Mirror;
-
 public:
 
     enum class AccessibilityType : uint8_t
     {
-        UpTo       = 0x00,
-        DownTo     = 0x01,
-        Exclusive  = 0x02,
-        NotEqual   = 0x03
+        UpTo = 0x00,
+        DownTo = 0x01,
+        Exclusive = 0x02,
+        NotEqual = 0x03
     };
+
+    virtual ~AbstractProperties()
+    {
+    }
+
+    virtual std::vector<AbstractProperty *> GetAll() const = 0;
+    virtual std::vector<AbstractProperty *> GetAll( Accessibility accessibility,
+                                                    AccessibilityType type = AccessibilityType::DownTo ) const = 0;
+
+    virtual std::set<std::string> GetNames() const = 0;
+
+    virtual std::set<uint32_t> GetIndices() const = 0;
+};
+
+template<class tClass>
+class Properties
+    : public AbstractProperties
+{
+    friend class Mirror;
+
+public:
 
     explicit Properties( TypeDescription<tClass> *type )
         : mType( type )
@@ -74,8 +92,8 @@ public:
         }
     }
 
-    template<typename tProperty >
-    Property< tClass, tProperty> *GetByMemberPtr( tProperty tClass::*variable ) const
+    template< class tClass2, typename tProperty, typename = typename std::enable_if< std::is_class<tClass2>::value >::type >
+    Property< tClass, tProperty> *GetByMemberPtr( tProperty tClass2::*variable ) const
     {
         return mProperties.at( MemberPtrToArray( variable ) );
     }
@@ -122,7 +140,7 @@ public:
         return properties;
     }
 
-    std::vector<AbstractProperty *> GetAll() const
+    std::vector<AbstractProperty *> GetAll() const override
     {
         std::vector<AbstractProperty *> properties = GetBaseClassProperties();
 
@@ -135,7 +153,7 @@ public:
     }
 
     std::vector<AbstractProperty *> GetAll( Accessibility accessibility,
-                                            AccessibilityType type = AccessibilityType::DownTo ) const
+                                            AccessibilityType type = AccessibilityType::DownTo ) const override
     {
         std::vector<AbstractProperty *> properties = GetBaseClassProperties();
 
@@ -150,7 +168,7 @@ public:
         return properties;
     }
 
-    std::set<std::string> GetNames() const
+    std::set<std::string> GetNames() const override
     {
         std::set<std::string> names = GetBaseClassNames();
 
@@ -162,7 +180,7 @@ public:
         return names;
     }
 
-    std::set<uint32_t> GetIndices() const
+    std::set<uint32_t> GetIndices() const override
     {
         std::set<uint32_t> indices;
 
@@ -181,15 +199,15 @@ public:
 
 protected:
 
-    template<typename tProperty>
-    Property< tClass, tProperty > *Add( tProperty tClass::*variable, Accessibility accessibility, size_t index,
-                                        uint32_t customFlags, const char *name, const char *description )
+    template< class tClass2, typename tProperty, typename = typename std::enable_if< std::is_class<tClass2>::value >::type >
+    Property< tClass2, tProperty > *Add( tProperty tClass2::*variable, Accessibility accessibility, size_t index,
+                                         uint32_t customFlags, const char *name, const char *description )
     {
         static_assert( sizeof( variable ) <= REFLECTION_MAX_MEMBER_PTR_SIZE,
                        "It seems the member pointer is greater than we did expect, please adjust the maximum member ptr size." );
 
-        Property<tClass, tProperty> *property = new Property<tClass, tProperty>( variable, accessibility, name,
-                                                                                 description, customFlags, index );
+        Property<tClass2, tProperty> *property = new Property<tClass2, tProperty>( variable, accessibility, name,
+                                                                                   description, customFlags, index );
 
         mProperties.insert( std::make_pair( MemberPtrToArray( variable ), property ) );
 
@@ -270,8 +288,8 @@ private:
         return properties;
     }
 
-    template<typename tProperty>
-    static inline std::array<uint8_t, REFLECTION_MAX_MEMBER_PTR_SIZE> MemberPtrToArray( tProperty tClass::* variable )
+    template< class tClass2, typename tProperty, typename = typename std::enable_if< std::is_class<tClass2>::value >::type >
+    static inline std::array<uint8_t, REFLECTION_MAX_MEMBER_PTR_SIZE> MemberPtrToArray( tProperty tClass2::* variable )
     {
         MemberPtr<tProperty> ptr = {};
         ptr.memberPtr = variable;
@@ -345,7 +363,10 @@ public:
 
     TypeDescription()
         : mProperties( nullptr ),
+          mDescription( nullptr ),
+          mName( nullptr ),
           mBaseClassIndex( NoParent ),
+          mFlags( 0 ),
           mIsBaseClass( false )
     {
         SetFlags< tClass >();
@@ -378,7 +399,7 @@ public:
         return mProperties;
     }
 
-    const Properties<tClass> *GetProperties() const
+    const Properties<tClass> *GetProperties() const override
     {
         return mProperties;
     }
@@ -388,11 +409,44 @@ public:
         return mBaseClasses;
     }
 
+    virtual std::string GetDescription() const override
+    {
+        if ( mDescription )
+        {
+            return mDescription;
+        }
+
+        return nullptr;
+    }
+
+    virtual const char *GetCDescription() const override
+    {
+        return mDescription;
+    }
+
+    virtual std::string GetName() const override
+    {
+        if ( mName )
+        {
+            return mName;
+        }
+
+        return nullptr;
+    }
+
+    virtual const char *GetCName() const override
+    {
+        return mName;
+    }
+
 protected:
 
     explicit TypeDescription( int32_t baseClassIndex )
         : mProperties( nullptr ),
+          mDescription( nullptr ),
+          mName( nullptr ),
           mBaseClassIndex( baseClassIndex ),
+          mFlags( 0 ),
           mIsBaseClass( true )
     {
     }
@@ -411,6 +465,12 @@ protected:
     void AddBaseClass( int32_t baseClassIndex )
     {
         mBaseClasses.emplace_back( Create< tBaseClass >( baseClassIndex ) );
+    }
+
+    void Declare( const char *name, const char *description ) override
+    {
+        mDescription = description;
+        mName = name;
     }
 
     Properties<tClass> *GetProperties()
@@ -450,6 +510,9 @@ private:
     Properties<tClass> *mProperties;
 
     std::vector<TypeDescription<tClass>> mBaseClasses;
+
+    const char *mDescription;
+    const char *mName;
 
     int32_t mBaseClassIndex;
     uint32_t mFlags;

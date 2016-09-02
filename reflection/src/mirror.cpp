@@ -24,34 +24,9 @@
  * @endcond
  */
 
-#pragma once
-#ifndef __REFLECTION_REFLECT_H__
-#define __REFLECTION_REFLECT_H__
+#include "reflection/mirror.h"
 
-#include "reflection/reflection.h"
-
-namespace Reflect
+Mirror::Mirror( ITypeDescription *typeDescription )
+    : mTypeDescription( typeDescription )
 {
-    const ITypeDescription *GetType( const std::string &name );
-
-    template< class tClass >
-    inline const TypeDescription< tClass > *GetType()
-    {
-        return InternalReflection::GetInstance()->ReflectType< tClass >();
-    }
-
-    template< class tClass >
-    inline bool IsRegistered()
-    {
-        return InternalReflection::GetInstance()->IsRegistered< tClass >();
-    }
-
-    template< class tClass >
-    inline void Clear()
-    {
-        InternalReflection::GetInstance()->ClearType< tClass >();
-    }
-
-    void ClearAll();
 }
-#endif

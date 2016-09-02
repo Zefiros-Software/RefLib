@@ -38,11 +38,16 @@ class Mirror
 
 public:
 
-    explicit Mirror( ITypeDescription *typeDescription )
-        : mTypeDescription( typeDescription )
-    {
+    explicit Mirror( ITypeDescription *typeDescription );
 
+
+    void Reflect( const char *name = nullptr,
+                  const char *description = nullptr )
+    {
+        mTypeDescription->Declare( name, description );
     }
+
+
 
     template< class tClass, class tProperty >
     void Reflect( tProperty tClass::*variable,

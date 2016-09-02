@@ -29,9 +29,13 @@
 #define __REFLECTION_ITYPEDESCRIPTION_H__
 
 #include <stdint.h>
+#include <string>
+
+class AbstractProperties;
 
 class ITypeDescription
 {
+    friend class Mirror;
 public:
 
     enum Type
@@ -71,6 +75,21 @@ public:
     virtual bool IsBaseClass() const = 0;
 
     virtual int32_t GetBaseClassIndex() const = 0;
+
+    virtual std::string GetName() const = 0;
+
+    virtual const char *GetCName() const = 0;
+
+    virtual std::string GetDescription() const = 0;
+
+    virtual const char *GetCDescription() const = 0;
+
+    virtual const AbstractProperties *GetProperties() const = 0;
+
+protected:
+
+    virtual void Declare( const char *name, const char *description ) = 0;
+
 };
 
 #endif

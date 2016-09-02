@@ -24,7 +24,13 @@
  * @endcond
  */
 
+#include "reflection/reflection.h"
 #include "reflection/reflect.h"
+
+const ITypeDescription *Reflect::GetType( const std::string &name )
+{
+    return InternalReflection::GetInstance()->ReflectType( name );
+}
 
 void Reflect::ClearAll()
 {

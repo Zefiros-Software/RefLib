@@ -50,7 +50,12 @@ public:
 
     Property()
         : mType( typeid( void ) ),
-          mPtrType( typeid( void * ) )
+          mPtrType( typeid( void * ) ),
+          mName( nullptr ),
+          mDescription( nullptr ),
+          mIndex( 0 ),
+          mCustomFlags( 0 ),
+          mAccessibility()
     {
     }
 

@@ -83,15 +83,20 @@ static class InternalReflection
 {
 public:
 
-    InternalReflection()
-        : mClassIDCounter( 0 )
-    {
+    InternalReflection();
 
-    }
+    ~InternalReflection();
 
-    ~InternalReflection()
+    ITypeDescription *ReflectType( const std::string &name ) const
     {
-        ClearTypes();
+        auto nameIt = mNameCache.find( name );
+
+        if ( nameIt != mNameCache.end() )
+        {
+            return mTypes.find( nameIt->second )->second;
+        }
+
+        return nullptr;
     }
 
     template< class tClass >
@@ -112,6 +117,11 @@ public:
 
             Helper< tClass, std::is_class< tClass >::value >::Reflect( mirror );
 
+            if ( mirror.mTypeDescription->GetCName() && !mirror.mTypeDescription->IsBaseClass() )
+            {
+                mNameCache[mirror.mTypeDescription->GetName()] = typeId;
+            }
+
             return static_cast< TypeDescription< tClass > * >( typeDescription );
         }
         else
@@ -129,6 +139,13 @@ public:
 
         if ( type != mTypes.end() )
         {
+            auto nameIt = mNameCache.find( type->second->GetName() );
+
+            if ( nameIt != mNameCache.end() )
+            {
+                mNameCache.erase( nameIt );
+            }
+
             delete type->second;
             mTypes.erase( type );
         }
@@ -142,15 +159,7 @@ public:
         return mTypes.find( typeId ) != mTypes.end();
     }
 
-    void ClearTypes()
-    {
-        for ( auto &types : mTypes )
-        {
-            delete types.second;
-        }
-
-        mTypes.clear();
-    }
+    void ClearTypes();
 
     template< typename tT >
     size_t GetClassID()
@@ -158,24 +167,15 @@ public:
         return AssignClassID< tT >( *this );
     }
 
-    static InternalReflection *GetInstance( InternalReflection *reflection = nullptr )
-    {
-        static InternalReflection *mReflection = new InternalReflection();
-
-        if ( reflection )
-        {
-            mReflection = reflection;
-        }
-
-        return mReflection;
-    }
+    static InternalReflection *GetInstance( InternalReflection *reflection = nullptr );
 
 private:
 
     std::unordered_map< size_t, ITypeDescription * > mTypes;
     std::unordered_map< std::type_index, size_t > mClassIDCache;
+    std::unordered_map< std::string, size_t > mNameCache;
 
-    std::mutex mClassIDLock;
+    mutable std::mutex mClassIDLock;
     size_t mClassIDCounter;
 
     template< class tClass, bool tIsClass >

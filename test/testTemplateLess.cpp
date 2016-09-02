@@ -24,34 +24,55 @@
  * @endcond
  */
 
-#pragma once
-#ifndef __REFLECTION_REFLECT_H__
-#define __REFLECTION_REFLECT_H__
-
 #include "reflection/reflection.h"
 
-namespace Reflect
+#include "helper.h"
+
+namespace
 {
-    const ITypeDescription *GetType( const std::string &name );
-
-    template< class tClass >
-    inline const TypeDescription< tClass > *GetType()
+    class TestClass
     {
-        return InternalReflection::GetInstance()->ReflectType< tClass >();
-    }
+    public:
 
-    template< class tClass >
-    inline bool IsRegistered()
+        uint32_t publicU32Property;
+
+        TestClass()
+            : publicU32Property( 0 ),
+              mProtectedU32Property( 0 ),
+              mPrivateU32Property( 0 )
+        {
+        }
+
+        static void Reflect( Mirror &mirror )
+        {
+            mirror.Reflect( "TestClass" );
+
+            mirror.Reflect( &TestClass::publicU32Property, 0 );
+            mirror.Reflect( &TestClass::mProtectedU32Property, 1 );
+            mirror.Reflect( &TestClass::mPrivateU32Property, 2 );
+        }
+
+    protected:
+
+        uint32_t mProtectedU32Property;
+
+    private:
+
+        uint32_t mPrivateU32Property;
+    };
+
+    TEST( P( SimplePropertiesBasicRegistration ), SanityCheck )
     {
-        return InternalReflection::GetInstance()->IsRegistered< tClass >();
-    }
+        ReflectionClassTest< TestClass > test;
 
-    template< class tClass >
-    inline void Clear()
-    {
-        InternalReflection::GetInstance()->ClearType< tClass >();
-    }
+        // Init
+        Reflect::GetType<TestClass>();
 
-    void ClearAll();
+        EXPECT_NE( nullptr, Reflect::GetType( "TestClass" ) );
+        EXPECT_EQ( "TestClass", Reflect::GetType( "TestClass" )->GetName() );
+
+        EXPECT_FALSE( Reflect::GetType( "TestClass" )->IsBaseClass() );
+
+        EXPECT_EQ( 3, Reflect::GetType( "TestClass" )->GetProperties()->GetAll().size() );
+    }
 }
-#endif

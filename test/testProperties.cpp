@@ -51,6 +51,8 @@ namespace
 
         static void Reflect( Mirror &mirror )
         {
+            mirror.Reflect( "SimplePropertiesBasicRegistration" );
+
             mirror.Reflect( &SimplePropertiesBasicRegistration::publicU32Property, 0 );
             mirror.Reflect( &SimplePropertiesBasicRegistration::publicU8Property, 1 );
 
