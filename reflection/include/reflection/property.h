@@ -88,7 +88,7 @@ public:
 
     virtual std::string GetDescription() const override
     {
-        return mDescription != nullptr ? mDescription : "";
+        return mDescription ? mDescription : "";
     }
 
     virtual const char *GetCDescription() const override
@@ -116,14 +116,14 @@ public:
         return mAccessibility;
     }
 
-    tProperty &Get( tClass &object ) const
+    void Set( tClass &object, const tProperty &propert )
     {
-        return object.*mMemberPtr;
+        AbstractProperty::Set< tClass, tProperty >( object, propert );
     }
 
-    void Set( tClass &object, const tProperty &property )
+    tProperty &Get( tClass &object ) const
     {
-        object.*mMemberPtr = property;
+        return AbstractProperty::Get< tProperty, tClass >( object );
     }
 
 protected:
@@ -139,6 +139,16 @@ protected:
           mCustomFlags( customFlags ),
           mAccessibility( accessibility )
     {
+    }
+
+    void *Get( void *obj ) const
+    {
+        return static_cast< void * >( &( *static_cast< tClass * >( obj ).*mMemberPtr ) );
+    }
+
+    void Set( void *obj, void *val )
+    {
+        ( *static_cast< tClass * >( obj ) ).*mMemberPtr = *static_cast< const tProperty *>( val );
     }
 
 private:

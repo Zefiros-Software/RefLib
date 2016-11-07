@@ -61,7 +61,7 @@ namespace
         uint32_t mPrivateU32Property;
     };
 
-    TEST( P( SimplePropertiesBasicRegistration ), SanityCheck )
+    TEST( P( TestClass ), SanityCheck )
     {
         ReflectionClassTest< TestClass > test;
 
@@ -74,5 +74,37 @@ namespace
         EXPECT_FALSE( Reflect::GetType( "TestClass" )->IsBaseClass() );
 
         EXPECT_EQ( 3, Reflect::GetType( "TestClass" )->GetProperties()->GetAll().size() );
+    }
+
+    TEST( P( TestClass ), Prop )
+    {
+        ReflectionClassTest< TestClass > test;
+
+        // Init
+        Reflect::GetType<TestClass>();
+
+        EXPECT_NE( nullptr, Reflect::GetType( "TestClass" ) );
+        EXPECT_EQ( "TestClass", Reflect::GetType( "TestClass" )->GetName() );
+
+        EXPECT_FALSE( Reflect::GetType( "TestClass" )->IsBaseClass() );
+
+        EXPECT_EQ( 0, Reflect::GetType( "TestClass" )->GetProperties()->GetAll()[0]->GetIndex() );
+        EXPECT_EQ( 1, Reflect::GetType( "TestClass" )->GetProperties()->GetAll()[1]->GetIndex() );
+        EXPECT_EQ( 2, Reflect::GetType( "TestClass" )->GetProperties()->GetAll()[2]->GetIndex() );
+
+        TestClass variable;
+
+        auto properties = Reflect::GetType( "TestClass" )->GetProperties();
+        EXPECT_EQ( 0, properties->GetAll()[ 0 ]->Get< uint32_t >( variable ) );
+        EXPECT_EQ( 0, properties->GetAll()[ 1 ]->Get< uint32_t >( variable ) );
+        EXPECT_EQ( 0, properties->GetAll()[2]->Get< uint32_t >( variable ) );
+
+        properties->GetAll()[0]->Set( variable, 1 );
+        properties->GetAll()[1]->Set( variable, 2 );
+        properties->GetAll()[2]->Set( variable, 3 );
+
+        EXPECT_EQ( 1, properties->GetAll()[0]->Get< uint32_t >( variable ) );
+        EXPECT_EQ( 2, properties->GetAll()[1]->Get< uint32_t >( variable ) );
+        EXPECT_EQ( 3, properties->GetAll()[2]->Get< uint32_t >( variable ) );
     }
 }

@@ -57,6 +57,21 @@ public:
     virtual std::type_index GetMemberPtrType() const = 0;
 
     virtual Accessibility GetAccessibility() const = 0;
+
+    template< typename tClass, typename tProperty >
+    void Set( tClass &object, const tProperty &propert )
+    {
+        Set( static_cast< void * >( &object ), ( void * )( &propert ) );
+    }
+
+    template<  typename tProperty, typename tClass >
+    tProperty &Get( tClass &object ) const
+    {
+        return *static_cast<tProperty *>( Get( static_cast<void *>( &object ) ) );
+    }
+
+    virtual void Set( void *obj, void *val ) = 0;
+    virtual void *Get( void *obj ) const = 0;
 };
 
 #endif
