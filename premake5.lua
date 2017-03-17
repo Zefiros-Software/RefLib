@@ -27,3 +27,17 @@ local zefiros = require( "Zefiros-Software/Zefiros-Defaults", "@head" )
 workspace "RefLib"
 
 	zefiros.setDefaults( "reflection" )
+    
+    project "reflection"
+        zpm.uses {
+        "Zefiros-Software/rttr"
+        }
+        
+    project "reflection-test"
+        zpm.uses {
+        "Zefiros-Software/rttr"
+        }
+        
+        links {
+            "reflection"
+        }

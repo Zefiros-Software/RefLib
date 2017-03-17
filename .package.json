@@ -1,11 +1,14 @@
 {
     "name": "Zefiros-Software/RefLib",
-    "dev": {
-        "requires": [
+    "postextract": "curl.lua",
+    "requires": [
             {
                 "name": "Zefiros-Software/GoogleTest",
                 "version": "@head"
+            },
+            {
+                "name": "Zefiros-Software/rttr",
+                "version": "@head"
             }
         ]
-    }
 }
