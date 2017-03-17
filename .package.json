@@ -1,6 +1,5 @@
 {
     "name": "Zefiros-Software/RefLib",
-    "postextract": "curl.lua",
     "requires": [
             {
                 "name": "Zefiros-Software/GoogleTest",

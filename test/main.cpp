@@ -30,25 +30,8 @@
 #include <cstdio>
 #include <stdint.h>
 
-#include <rttr/registration>
-
-
-static void f()
-{
-    std::cout << "Hello World" << std::endl;
-}
-using namespace rttr;
-RTTR_REGISTRATION
-{
-    using namespace rttr;
-    registration::method( "f", &f );
-}
-
-
 int main( int argc, char **argv )
 {
-    type::invoke( "f", {} );
-
 #ifdef _WIN32
     _CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
     _CrtSetReportMode( _CRT_ASSERT, _CRTDBG_MODE_FILE );
