@@ -30,6 +30,8 @@
 #include <cstdio>
 #include <stdint.h>
 
+#include "reflection/mirror.h"
+
 int main( int argc, char **argv )
 {
 #ifdef _WIN32
@@ -38,6 +40,32 @@ int main( int argc, char **argv )
     _CrtSetReportFile( _CRT_ASSERT, _CRTDBG_FILE_STDERR );
     //_crtBreakAlloc =  0;
 #endif
+
+    // DEBUG
+    /*
+    RefLib::Mirror mirror;
+    mirror.method( "f", &f, rttr::metadata( "Description", "This is a value." ) );
+
+    //mirror.property_readonly( 0, "PI", &pi );
+    rttr::type::invoke( "f", {} );
+    rttr::variant value = rttr::type::get_property_value( "PI" ); // remark the capitalization of "PI"
+
+    if ( value && value.is_type<double>() )
+    {
+        std::cout << value.get_value<double>() << std::endl;
+    }
+
+    RefLib::Mirror::ClassMirror<test_class> class1( "test_class" );
+    class1.method( "print_value", &test_class::print_value, {} );
+    class1.constructor<int>();
+
+    rttr::type class_type = rttr::type::get_by_name( "test_class" );
+    rttr::variant obj_var = class_type.create( { 42 } );
+    class_type.invoke( "print_value", obj_var, {} ); // print 42
+    */
+    // END
+
+
 
     testing::InitGoogleTest( &argc, argv );
 
